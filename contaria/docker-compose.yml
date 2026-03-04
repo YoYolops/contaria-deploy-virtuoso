@@ -36,11 +36,11 @@ services:
     container_name: nextjs-frontend
     volumes:
       - ./front-end:/app
-      - /app/node_modules # Prevents host node_modules from overriding container's
+      - /app/node_modules
     environment:
       - NODE_ENV=development
     ports:
-      - "3001:3000" # Optional if you want direct access for debugging
+      - "3001:3000"
 
   fastapi-app:
     build:
@@ -50,10 +50,15 @@ services:
     ports:
       - "8000:8000"
     environment:
-      OLLAMA_API_URL: "http://ollama:11434/api/generate"
+      # Updated to 11435 to match your Ollama service config
+      OLLAMA_API_URL: "http://ollama:11435/api/generate"
       OLLAMA_MODEL: "llama3.2:latest"
+      # Internal Docker DNS uses the service name 'contaria_db'
+      DATABASE_URL: "postgresql://contaria:contaria@contaria_db:5432/contaria"
     depends_on:
       ollama:
+        condition: service_healthy
+      contaria_db:
         condition: service_healthy
     volumes:
       - ./back-end:/app
@@ -62,10 +67,17 @@ services:
     build:
       context: ./database
       dockerfile: Dockerfile
+    container_name: contaria_db
     volumes:
       - contaria_db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    # Added healthcheck so FastAPI knows when the DB is actually ready for queries
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U contaria -d contaria"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   nginx:
     build:
@@ -76,6 +88,7 @@ services:
       - "3000:80"
     depends_on:
       - fastapi-app
+      - front-end
     restart: always
 
 volumes:
