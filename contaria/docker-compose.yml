@@ -1,0 +1,77 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    
+    # Start server in background, wait a moment, pull the model, then keep waiting
+    entrypoint: /bin/sh
+    command:
+      - "-c"
+      - "ollama serve & sleep 5 && ollama pull llama3.2:latest && wait"
+
+    healthcheck:
+      # Use 'ollama list' to check if the server is responsive.
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 600s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  front-end:
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+    container_name: nextjs-frontend
+    volumes:
+      - ./front-end:/app
+      - /app/node_modules # Prevents host node_modules from overriding container's
+    environment:
+      - NODE_ENV=development
+    ports:
+      - "3001:3000" # Optional if you want direct access for debugging
+
+  fastapi-app:
+    build:
+      context: ./back-end
+      dockerfile: Dockerfile
+    container_name: fastapi-app
+    ports:
+      - "8000:8000"
+    environment:
+      OLLAMA_API_URL: "http://ollama:11434/api/generate"
+      OLLAMA_MODEL: "llama3.2:latest"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ./back-end:/app
+
+  contaria_db:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    volumes:
+      - contaria_db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx-proxy
+    ports:
+      - "3000:80"
+    depends_on:
+      - fastapi-app
+    restart: always
+
+volumes:
+  ollama_data:
+    driver: local
+  contaria_db_data:
