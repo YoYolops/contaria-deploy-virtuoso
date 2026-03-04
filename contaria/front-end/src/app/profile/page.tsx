@@ -50,7 +50,7 @@ export default function ProfilePage() {
    * Usa variável de ambiente ou fallback para localhost.
    */
   const backendUrl =
-    process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://8522-2001-12f0-9c1-664-44d4-121b-454a-d470.ngrok-free.app/api";
+    process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://5562-2001-12f0-9c1-664-7d82-9c3-3906-afd9.ngrok-free.app/api";
 
   /**
    * Estado responsável por armazenar estatísticas do usuário.

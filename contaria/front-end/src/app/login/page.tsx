@@ -45,7 +45,7 @@ export default function LoginPage() {
    */
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL ??
-    "https://8522-2001-12f0-9c1-664-44d4-121b-454a-d470.ngrok-free.app/api";
+    "https://5562-2001-12f0-9c1-664-7d82-9c3-3906-afd9.ngrok-free.app/api";
 
   /**
    * Tempo máximo de espera da requisição de login (ms).
