@@ -3,21 +3,28 @@ services:
     image: ollama/ollama:latest
     container_name: ollama
     restart: unless-stopped
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11435
     ports:
-      - "11434:11434"
+      - "11435:11435"
     volumes:
       - ollama_data:/root/.ollama
-    
-    # Start server in background, wait a moment, pull the model, then keep waiting
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+ 
     entrypoint: /bin/sh
     command:
       - "-c"
       - "ollama serve & sleep 5 && ollama pull llama3.2:latest && wait"
-
+ 
     healthcheck:
-      # Use 'ollama list' to check if the server is responsive.
       test: ["CMD-SHELL", "ollama list || exit 1"]
-      interval: 600s
+      interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
